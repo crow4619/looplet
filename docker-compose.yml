@@ -1,0 +1,16 @@
+services:
+  looplet:
+    build: .
+    container_name: looplet-api
+    ports:
+      - 8088:8088
+    environment:
+      - NODE_ENV=production
+      - DB_FILE=/app/db/looplet.sqlite
+      - MEDIA_DIR=/app/media
+    volumes:
+      - ./data/db:/app/db
+      - ./data/media:/app/media
+      - ./data/public:/app/public:ro
+    restart: unless-stopped
+networks: {}

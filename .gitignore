@@ -1,0 +1,40 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+db/*.sqlite*
+db/backups/
+audio/
+video/
+animations/
+uploads/
+public/audio/
+public/video/
+public/uploads/
+# DB + media
+data/db/*.sqlite*
+data/db/*.sqlite-*
+data/audio/
+data/video/
+data/uploads/
+
+# Keep empty dirs
+data/db/.gitkeep
+data/audio/.gitkeep
+data/video/.gitkeep
+data/uploads/.gitkeep
+
+# --- overrides: keep folders, ignore contents, keep .gitkeep ---
+!data/db/
+!data/audio/
+!data/video/
+!data/uploads/
+data/db/*
+!data/db/.gitkeep
+data/audio/*
+!data/audio/.gitkeep
+data/video/*
+!data/video/.gitkeep
+data/uploads/*
+!data/uploads/.gitkeep
