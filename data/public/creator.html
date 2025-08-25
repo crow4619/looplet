@@ -6,11 +6,26 @@
 <title>Looplet Creator</title>
 <link rel="icon" type="image/png" href="looplet.png"/>
 <style>
-  :root{--bg:#0b0f14;--fg:#e9eef3;--muted:#aab6c4;--card:#101722;--line:#1c2634;--accent:#1367d6;--bad:#ff6868}
+  :root{
+    --bg:#0b0f14; --fg:#e9eef3; --muted:#aab6c4; --card:#101722; --line:#1c2634;
+    --accent:#1367d6; --bad:#ff6868; --good:#71ea9a;
+
+    /* fixed column widths (header/body share these) */
+    --col-prev:   140px;
+    --col-name:   360px;
+    --col-title:  260px;
+    --col-tags:   220px;
+    --col-credit: 200px;
+    --col-date:   240px;
+    --col-actions:160px;
+
+    --table-min: calc(var(--col-prev) + var(--col-name) + var(--col-title) + var(--col-tags) + var(--col-credit) + var(--col-date) + var(--col-actions));
+  }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{margin:0;background:linear-gradient(180deg,#0b0f14,#0c1117);color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-  header{padding:18px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+
+  header{padding:18px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
   .logo-title{display:flex;align-items:center;gap:10px;min-width:0}
   .logo-title img{height:22px}
   .logo-title h1{font-size:20px;margin:0;white-space:nowrap}
@@ -19,40 +34,70 @@
   main{max-width:1200px;margin:20px auto;padding:0 14px 40px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 6px 18px rgba(0,0,0,.25);margin-bottom:14px}
   .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .stack{display:grid;gap:10px}
+
   button,select,input[type="file"]{height:40px;border-radius:10px;border:1px solid var(--line);background:#0f1520;color:var(--fg);padding:0 12px}
   button.primary{background:linear-gradient(180deg,#2480ff,#1367d6);border:none;box-shadow:0 6px 18px rgba(19,103,214,.35);font-weight:600}
   button.icon{width:36px;height:36px;padding:0;display:inline-grid;place-items:center;border-radius:9px}
-  button.ghost{height:32px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:#0f1520;color:var(--fg)}
-  input[type="text"], input[type="datetime-local"]{width:100%;background:#0f1520;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+  input[type="text"], input[type="datetime-local"]{width:100%;background:#0f1520;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 8px;height:36px}
   .muted{color:var(--muted);font-size:12px}
-  .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:#0f1520;font-size:12px;color:#9ec5ff}
-  .hidden{display:none!important}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:#0f1520;font-size:12px}
+  .badge.unsaved{border-color:#ffd27a;box-shadow:0 0 0 1px #ffd27a33 inset}
+  .ok{color:var(--good)} .err{color:#ff9b9b}
 
-  table{width:100%;border-collapse:collapse;font-size:14px}
-  th,td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-  th{color:var(--muted);text-align:left}
+  .table-card{padding:0}
+  .controls{position:sticky;top:0;z-index:3;padding:14px;border-bottom:1px solid var(--line);background:var(--card);border-top-left-radius:14px;border-top-right-radius:14px}
+  .controls .row{gap:12px}
+  .hint{padding:0 14px 10px;color:var(--muted);font-size:12px}
 
-  @media (max-width: 820px){
-    #table thead{display:none}
-    #table tbody tr{display:grid;grid-template-columns:120px 1fr;gap:10px;padding:10px;border-bottom:1px solid var(--line)}
-    #table tbody td{border:0;padding:0}
-    #table tbody td[data-title]::before{content:attr(data-title);display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
-    th.col-preview{width:auto}
+  .table-wrap{
+    position:relative;
+    overflow:auto;                 /* both directions */
+    max-height:65vh;
+    border-top:1px solid var(--line);
+    border-bottom-left-radius:14px;border-bottom-right-radius:14px;
   }
+  .table{min-width:var(--table-min)}
 
+  /* sticky header IN the scroll container → it naturally scrolls horizontally with content */
+  .table-head{position:sticky;top:0;z-index:2;background:#0f1520;border-bottom:1px solid var(--line)}
+
+  /* identical grid for head + rows */
+  .hdr,.rowgrid{
+    display:grid;
+    grid-template-columns:
+      var(--col-prev)
+      var(--col-name)
+      var(--col-title)
+      var(--col-tags)
+      var(--col-credit)
+      var(--col-date)
+      var(--col-actions);
+    gap:0; align-items:center;
+  }
+  .hdr > div{padding:10px 12px;color:var(--muted);font-size:13px;background:#0f1520;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tbody .rowgrid{border-bottom:1px solid var(--line)}
+  .tbody .rowgrid > div{padding:10px 12px}
+
+  /* wrap text, but never change the column width */
+  .wrap{overflow-wrap:anywhere;word-break:break-word;white-space:normal}
+
+  /* preview */
   .preview{position:relative;width:120px;aspect-ratio:3/2;border-radius:10px;overflow:hidden;background:#0f1520;border:1px solid var(--line)}
   .preview img,.preview video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
   .preview .static{opacity:1;transition:opacity .18s ease}
   .preview .live{opacity:0;transition:opacity .18s ease;pointer-events:none}
   .preview:hover .static,.preview:focus-within .static{opacity:0}
   .preview:hover .live,.preview:focus-within .live{opacity:1}
-  .preview .badge{position:absolute;right:6px;bottom:6px;font-size:10px;color:#e9eef3;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);padding:2px 6px;border-radius:999px;letter-spacing:.2px}
-  th.col-preview{width:130px}
+  .preview .ext{position:absolute;right:6px;bottom:6px;font-size:10px;color:#e9eef3;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.18);padding:2px 6px;border-radius:999px}
 
-  .aprev{width:120px}
-  .aprev audio{width:100%; height:32px}
+  .actions{display:flex;gap:8px;align-items:center}
+  .danger{border-color:#4a1d1f !important;background:#1a0f11 !important}
+  .danger:hover{border-color:#7a2b2f !important}
 
-  tr.dirty{border-left:3px solid var(--accent)}
+  @media (max-width:900px){
+    :root{ --col-name:320px; --col-title:220px; --col-tags:200px; --col-credit:180px; --col-date:220px; }
+  }
 </style>
 </head>
 <body>
@@ -62,364 +107,190 @@
 </header>
 
 <main>
-
   <!-- Import -->
   <section class="card">
-    <div class="row" style="gap:12px">
+    <div class="row">
       <strong>Import</strong>
       <button id="btnScan" class="primary">Scan</button>
-      <input id="uploadMixed" type="file" multiple accept=".gif,.mp4,.webm,.mov,.mp3,.flac,.ogg,.wav" style="display:none"/>
-      <button id="btnUploadMixed">Upload media…</button>
-      <span id="scanInfo" class="muted"></span>
+      <input id="uploadPicker" type="file" multiple accept=".gif,.mp4,.webm,.mov,.mp3,.flac,.ogg,.wav" style="display:none"/>
+      <button id="btnUpload">Upload media…</button>
+      <span id="importInfo" class="muted"></span>
     </div>
   </section>
 
   <!-- Media Library -->
-  <section class="card">
-    <div class="row" style="gap:12px">
-      <strong>Media Library</strong>
-
-      <span class="muted">Type</span>
-      <select id="mediaType">
-        <option value="video" selected>Video (animations)</option>
-        <option value="audio">Audio</option>
-      </select>
-
-      <button id="btnReload">Reload from DB</button>
-
-      <span class="muted">Sort</span>
-      <select id="sortField" title="Sort by">
-        <option value="filename" selected>Filename</option>
-        <option value="title">Title</option>
-        <option value="credit">Credit</option>
-        <option value="created_at">Date</option>
-      </select>
-      <button id="sortDir" title="Toggle sort">A→Z</button>
-
-      <button id="btnSaveAll" disabled>Save all changes (0)</button>
+  <section class="card table-card">
+    <div class="controls">
+      <div class="row" style="justify-content:space-between;gap:14px">
+        <div class="row">
+          <strong>Media Library</strong>
+          <span class="muted">Type</span>
+          <select id="typeSelect" title="Media type">
+            <option value="video">Video (animations)</option>
+            <option value="audio">Audio</option>
+          </select>
+          <button id="btnReload">Reload from DB</button>
+        </div>
+        <div class="row">
+          <span class="muted">Sort</span>
+          <select id="sortField">
+            <option value="filename">Filename</option>
+            <option value="title">Title</option>
+            <option value="credit">Credit</option>
+            <option value="created_at">Date</option>
+          </select>
+          <select id="sortDir">
+            <option value="asc">A→Z</option>
+            <option value="desc">Z→A</option>
+          </select>
+          <button id="btnSaveAll">Save all changes</button>
+        </div>
+      </div>
     </div>
 
-    <div class="muted" style="margin:6px 0 10px">
-      Edit titles, tags (<code>space, night</code> or <code>#space #night</code>), credit, and date. Use <span class="mono">Now</span> to stamp the current time.
-      Rows marked with a blue bar and “● Unsaved” have edits not saved to the DB yet.
+    <div class="hint">
+      Edit titles, tags (<code>space</code>, <code>night</code> or <code>#space #night</code>), credit, and date.
+      Click 💾 to save a row, 🗑 to delete (optionally remove the file too). Thumbnails load only for visible rows.
+      <span id="status" class="muted"></span>
     </div>
 
-    <div style="overflow:auto;border:1px solid var(--line);border-radius:10px">
-      <table id="table">
-        <thead>
-        <tr>
-          <th class="col-preview">Preview</th>
-          <th style="width:22%">Filename</th>
-          <th style="width:20%">Title</th>
-          <th style="width:18%">Tags</th>
-          <th style="width:16%">Credit</th>
-          <th style="width:12%">Date</th>
-          <th style="width:6%">Actions</th>
-        </tr>
-        </thead>
-        <tbody id="tbody">
-          <tr><td colspan="7" class="muted">Loading…</td></tr>
-        </tbody>
-      </table>
+    <div id="tableWrap" class="table-wrap" aria-live="polite">
+      <div class="table">
+        <div class="table-head">
+          <div id="headGrid" class="hdr">
+            <div>Preview</div>
+            <div>Filename</div>
+            <div>Title</div>
+            <div>Tags</div>
+            <div>Credit</div>
+            <div>Date</div>
+            <div>Actions</div>
+          </div>
+        </div>
+        <div id="tbody" class="tbody">
+          <div style="padding:12px 14px" class="muted">Loading…</div>
+        </div>
+        <div id="sentinel" style="height:24px"></div>
+      </div>
     </div>
   </section>
-
 </main>
 
 <script>
-/* ---------- constants & helpers ---------- */
-const VIDEO_BASE='/video/';
-const AUDIO_BASE='/audio/';
-const IS_VIDEO_RE=/\.(gif|mp4|webm|mov)$/i;
-const IS_AUDIO_RE=/\.(mp3|flac|ogg|wav)$/i;
+/* ===== API ===== */
+const API = {
+  scan: () => fetch('/api/scan',{method:'POST'}).then(r=>r.json()),
+  upload: (files) => { const fd=new FormData(); for(const f of files) fd.append('files',f,f.name); return fetch('/api/upload',{method:'POST',body:fd}).then(r=>r.json()); },
+  list: (kind) => fetch('/api/media?kind='+encodeURIComponent(kind)).then(r=>r.json()).then(j=>j.items||[]),
+  patch: (id,body) => fetch('/api/media/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.json()),
+  del: (id,alsoFile) => fetch('/api/delete/'+id+'?file='+(alsoFile?'1':'0'),{method:'DELETE'}).then(r=>r.json())
+};
+const VIDEO_BASE='/video/', AUDIO_BASE='/audio/';
+const isGif = u => /\.gif(\?|#|$)/i.test(u);
+const drawFallbackThumb=()=>{const c=document.createElement('canvas');c.width=600;c.height=400;const g=c.getContext('2d');const d=g.createLinearGradient(0,0,0,400);d.addColorStop(0,'#19253a');d.addColorStop(1,'#0f1520');g.fillStyle=d;g.fillRect(0,0,c.width,c.height);return c.toDataURL('image/png');};
+function gifThumb(url){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin='anonymous';i.onload=()=>{try{const c=document.createElement('canvas');const w=i.naturalWidth||600,h=i.naturalHeight||400;c.width=600;c.height=Math.round(h*(c.width/w));c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL('image/png'));}catch(e){rej(e)}};i.onerror=()=>rej(new Error('gif'));i.src=url+(url.includes('?')?'&':'?')+'t='+Date.now();setTimeout(()=>rej(new Error('gif timeout')),8000);});}
+function videoThumb(url){return new Promise((res,rej)=>{const v=document.createElement('video');v.preload='metadata';v.muted=true;v.playsInline=true;v.crossOrigin='anonymous';v.src=url;let t=setTimeout(()=>fail(new Error('timeout')),10000);const clean=()=>{v.onerror=null;v.onloadedmetadata=null;v.onseeked=null;clearTimeout(t)};const fail=e=>{try{v.pause()}catch{}v.removeAttribute('src');v.load();clean();rej(e||new Error('thumb'))};const grab=()=>{const c=document.createElement('canvas');const w=v.videoWidth||600,h=v.videoHeight||400;if(!w||!h) throw new Error('nodim');c.width=600;c.height=Math.round(h*(c.width/w));c.getContext('2d').drawImage(v,0,0,c.width,c.height);clean();res(c.toDataURL('image/jpeg',0.9))};v.onerror=()=>fail(new Error('video'));v.onloadedmetadata=()=>{const tSec=Math.min(2,Math.max(0.15,(v.duration||2)*0.15));v.onseeked=()=>{try{grab()}catch(e){fail(e)}};try{v.currentTime=tSec}catch{fail(new Error('seek'))}}});}
 
-function parseTagsInput(s){
-  if(Array.isArray(s)) return s.map(x=>String(x).toLowerCase());
-  const out=new Set(); const raw=String(s||'').trim(); if(!raw) return [];
-  raw.split(',').forEach(p=>{p=p.trim(); if(p) out.add(p.replace(/^#/,'').toLowerCase());});
-  for(const m of raw.matchAll(/(^|[\s_.-])#([\p{L}\p{N}_-]+)/gu)) out.add(m[2].toLowerCase());
-  return Array.from(out);
-}
-function titleFromName(name){ return String(name||'').replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim(); }
-function baseFromFilename(filename){ return String(filename||'').replace(/\.[^.]+$/,''); }
-function isGif(url){ return /\.gif(\?|#|$)/i.test(url); }
-function isoToLocalDT(iso){ if(!iso) return ""; const d = new Date(iso); const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; }
-function localDTToISO(localStr){ if(!localStr) return null; const d=new Date(localStr); if(Number.isNaN(d.getTime())) return null; return d.toISOString(); }
-
-/* thumbnails */
-function drawFallbackThumb(){ const c=document.createElement('canvas'); c.width=600; c.height=400; const g=c.getContext('2d'); const grd=g.createLinearGradient(0,0,0,400); grd.addColorStop(0,'#19253a'); grd.addColorStop(1,'#0f1520'); g.fillStyle=grd; g.fillRect(0,0,c.width,c.height); return c.toDataURL('image/png'); }
-function gifThumb(url){ return new Promise((res,rej)=>{ const img=new Image(); img.crossOrigin='anonymous'; img.onload=()=>{ try{ const c=document.createElement('canvas'); const w=img.naturalWidth||600,h=img.naturalHeight||400; c.width=600; c.height=Math.round(h*(c.width/w)); c.getContext('2d').drawImage(img,0,0,c.width,c.height); res(c.toDataURL('image/png')); }catch(e){rej(e)} }; img.onerror=()=>rej(new Error('gif thumb error')); img.src = url + (url.includes('?')?'&':'?') + 't=' + Date.now(); setTimeout(()=>rej(new Error('gif timeout')),8000); }); }
-function videoThumb(url){ return new Promise((res,rej)=>{ const v=document.createElement('video'); v.preload='metadata'; v.muted=true; v.crossOrigin='anonymous'; v.src=url; const fail=e=>{try{v.pause();}catch{} v.removeAttribute('src'); v.load(); rej(e||new Error('thumb error'));}; v.addEventListener('loadeddata',()=>{ try{ v.currentTime=Math.min(0.2,(v.duration||1)/5); }catch{} }); v.addEventListener('seeked',()=>{ try{ const c=document.createElement('canvas'); const w=v.videoWidth||600,h=v.videoHeight||400; c.width=600; c.height=Math.round(h*(c.width/w)); c.getContext('2d').drawImage(v,0,0,c.width,c.height); try{v.pause();}catch{} v.removeAttribute('src'); v.load(); res(c.toDataURL('image/jpeg',0.9)); }catch(e){fail(e)} }); v.onerror=fail; setTimeout(()=>fail(new Error('thumb timeout')),6000); }); }
-
-/* API */
-async function apiScan(){ const r=await fetch('/api/scan',{method:'POST'}); if(!r.ok) throw new Error('scan failed'); return r.json(); }
-async function apiList(kind){ const r=await fetch('/api/media?kind='+encodeURIComponent(kind)); if(!r.ok) throw new Error('list failed'); const j=await r.json(); return j.items||[]; }
-async function apiPatch(id,body){ const r=await fetch('/api/media/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); if(!r.ok) throw new Error('save failed'); return r.json(); }
-async function apiUpload(files, kind){ const fd = new FormData(); for(const f of files) fd.append('files', f, f.name); const r = await fetch('/api/upload?kind='+encodeURIComponent(kind), { method:'POST', body: fd }); if(!r.ok) throw new Error('upload failed'); return r.json(); }
-async function apiDelete(id, deleteFile){ const r = await fetch(`/api/media/${id}?deleteFile=${deleteFile?1:0}`, { method:'DELETE' }); if(!r.ok) throw new Error('delete failed'); return r.json(); }
-
-/* DOM refs */
-const $tbody=document.getElementById('tbody');
+/* ===== DOM ===== */
 const $btnScan=document.getElementById('btnScan');
-const $scanInfo=document.getElementById('scanInfo');
+const $btnUpload=document.getElementById('btnUpload');
+const $uploadPicker=document.getElementById('uploadPicker');
+const $importInfo=document.getElementById('importInfo');
+
+const $type=document.getElementById('typeSelect');
 const $btnReload=document.getElementById('btnReload');
-const $mediaType=document.getElementById('mediaType');
 const $sortField=document.getElementById('sortField');
 const $sortDir=document.getElementById('sortDir');
-const $btnUploadMixed=document.getElementById('btnUploadMixed');
-const $uploadMixed=document.getElementById('uploadMixed');
 const $btnSaveAll=document.getElementById('btnSaveAll');
 
-/* state */
-let ROWS=[];
-let currentKind='video';
-let sortFieldKey='filename';
-let sortAscending=true;
+const $tableWrap=document.getElementById('tableWrap');
+const $tbody=document.getElementById('tbody');
+const $sentinel=document.getElementById('sentinel');
+const $status=document.getElementById('status');
 
-/* dirty tracking */
-function dirtyCount(){ return ROWS.filter(r=>r._dirty).length; }
-function updateSaveAllButton(){
-  const n = dirtyCount();
-  $btnSaveAll.disabled = n===0;
-  $btnSaveAll.textContent = `Save all changes (${n})`;
-}
-function markDirty(row, tr, yes=true){
-  const was = !!row._dirty;
-  row._dirty = !!yes;
-  if(tr){
-    if(row._dirty){
-      tr.classList.add('dirty');
-      tr.querySelector('.unsaved')?.classList.remove('hidden');
-    }else{
-      tr.classList.remove('dirty');
-      tr.querySelector('.unsaved')?.classList.add('hidden');
-    }
-  }
-  if(was!==row._dirty) updateSaveAllButton();
-}
+/* ===== State ===== */
+let KIND='video';
+let ALL_ITEMS=[]; let VISIBLE_ROWS=[]; let PAGE=0;
+const PAGE_SIZE=40;
+let observerRows=null, observerPager=null;
+let dirty=new Map();
 
-/* sorting */
-function labelSortButton(){
-  if(sortFieldKey==='created_at'){
-    $sortDir.textContent = sortAscending ? 'Old→New' : 'New→Old';
-  }else{
-    $sortDir.textContent = sortAscending ? 'A→Z' : 'Z→A';
-  }
-}
-function sortRowsInPlace(){
-  const dir = sortAscending ? 1 : -1;
-  ROWS.sort((a,b)=>{
-    if(sortFieldKey==='created_at'){
-      const ad = a.created_at ? Date.parse(a.created_at) : 0;
-      const bd = b.created_at ? Date.parse(b.created_at) : 0;
-      return (ad - bd) * dir;
-    }
-    const av = (a[sortFieldKey]||'').toString().toLowerCase();
-    const bv = (b[sortFieldKey]||'').toString().toLowerCase();
-    return av.localeCompare(bv) * dir;
-  });
-}
+/* ===== Utils ===== */
+function parseTagsInput(s){ if(Array.isArray(s)) return s.map(x=>String(x).toLowerCase()); const out=new Set(); const raw=String(s||'').trim(); if(!raw) return []; raw.split(',').forEach(p=>{p=p.trim(); if(p) out.add(p.replace(/^#/,'').toLowerCase())}); for(const m of raw.matchAll(/(^|[\s_.-])#([\p{L}\p{N}_-]+)/gu)) out.add(m[2].toLowerCase()); return Array.from(out); }
+const titleFromName=n=>String(n||'').replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim();
+const baseFromFilename=fn=>String(fn||'').replace(/\.[^.]+$/,'');
+function markDirty(id,row,label){ dirty.set(id,true); if(label) label.style.display=''; }
+function clearDirty(id,row,label){ dirty.delete(id); if(label) label.style.display='none'; }
 
-/* render */
-function clearRows(){ $tbody.innerHTML='<tr><td colspan="7" class="muted">Loading…</td></tr>'; }
+/* ===== Row builder ===== */
+function makeRow(item){
+  const row=document.createElement('div'); row.className='rowgrid'; row.dataset.id=item.id;
 
-function setRows(items){
-  ROWS = items.slice();
-  sortRowsInPlace();
-  if(!ROWS.length){ $tbody.innerHTML='<tr><td colspan="7" class="muted">No rows — try Scan or Upload.</td></tr>'; updateSaveAllButton(); return; }
-  $tbody.innerHTML='';
-  ROWS.forEach(row=>{
-    const tr=document.createElement('tr');
+  const cPrev=document.createElement('div');
+  if(KIND==='video'){
+    const wrap=document.createElement('div'); wrap.className='preview'; wrap.tabIndex=0;
+    const staticImg=document.createElement('img'); staticImg.className='static'; staticImg.alt='';
+    const liveEl=isGif(item.filename)? new Image() : document.createElement('video'); liveEl.className='live';
+    if(liveEl.tagName==='VIDEO'){ liveEl.muted=true; liveEl.loop=true; liveEl.playsInline=true; liveEl.preload='metadata'; }
+    const badge=document.createElement('div'); badge.className='ext'; badge.textContent=(item.filename.split('.').pop()||'').toLowerCase();
+    wrap.appendChild(staticImg); wrap.appendChild(liveEl); wrap.appendChild(badge); cPrev.appendChild(wrap);
+    row.__thumbLoad=async()=>{ const url=VIDEO_BASE+item.filename; try{ const src=isGif(url)?await gifThumb(url):await videoThumb(url); staticImg.src=src; if(liveEl.tagName==='VIDEO'){ liveEl.src=url; const start=()=>{ try{liveEl.currentTime=0.12;}catch{} liveEl.play().catch(()=>{})}; const stop=()=>{ try{liveEl.pause()}catch{} }; wrap.addEventListener('mouseenter',start); wrap.addEventListener('mouseleave',stop); wrap.addEventListener('focus',start); wrap.addEventListener('blur',stop); } else liveEl.src=url; }catch{ staticImg.src=drawFallbackThumb(); } };
+  } else { cPrev.textContent='—'; }
 
-    // Preview
-    const tdPrev=document.createElement('td'); tdPrev.setAttribute('data-title','Preview');
-    if(currentKind==='video'){
-      const wrap=document.createElement('div'); wrap.className='preview'; wrap.tabIndex=0;
-      const staticImg=document.createElement('img'); staticImg.className='static'; staticImg.alt='';
-      const liveEl=isGif(row.filename)? new Image() : document.createElement('video'); liveEl.className='live';
-      if(liveEl.tagName==='VIDEO'){ liveEl.muted=true; liveEl.loop=true; liveEl.playsInline=true; liveEl.preload='metadata'; }
-      const badge=document.createElement('div'); badge.className='badge'; badge.textContent=(row.filename.split('.').pop()||'').toLowerCase();
-      wrap.appendChild(staticImg); wrap.appendChild(liveEl); wrap.appendChild(badge); tdPrev.appendChild(wrap);
+  const cName=document.createElement('div'); cName.className='wrap'; cName.textContent=item.filename;
 
-      const url=VIDEO_BASE + row.filename;
-      (isGif(url)?gifThumb(url):videoThumb(url))
-        .then(src=>{
-          staticImg.src=src;
-          liveEl.src=url;
-          if(liveEl.tagName==='VIDEO'){
-            const start=()=>{ try{liveEl.currentTime=Math.min(0.1,(liveEl.duration||1)/10);}catch{} liveEl.play().catch(()=>{}); };
-            const stop =()=>{ try{liveEl.pause();}catch{} };
-            wrap.addEventListener('mouseenter', start);
-            wrap.addEventListener('mouseleave', stop);
-            wrap.addEventListener('focus', start);
-            wrap.addEventListener('blur',  stop);
-          }
-        })
-        .catch(()=>{ staticImg.src=drawFallbackThumb(); });
-    } else {
-      const box=document.createElement('div'); box.className='aprev';
-      const a=document.createElement('audio'); a.controls=true; a.preload='metadata'; a.src=AUDIO_BASE+row.filename;
-      box.appendChild(a); tdPrev.appendChild(box);
-    }
-    tr.appendChild(tdPrev);
+  const cTitle=document.createElement('div'); const iTitle=document.createElement('input'); iTitle.type='text'; iTitle.value=item.title||titleFromName(baseFromFilename(item.filename)); cTitle.appendChild(iTitle);
+  const cTags=document.createElement('div'); const iTags=document.createElement('input'); iTags.type='text'; iTags.value=(Array.isArray(item.tags)?item.tags.join(', '):''); cTags.appendChild(iTags);
+  const cCred=document.createElement('div'); const iCred=document.createElement('input'); iCred.type='text'; iCred.value=item.credit||''; cCred.appendChild(iCred);
 
-    // helper inputs
-    const mk=(title, val, key, ph='')=>{
-      const td=document.createElement('td'); td.setAttribute('data-title',title);
-      const inp=document.createElement('input'); inp.type='text'; inp.value=val||''; inp.placeholder=ph; td.appendChild(inp);
-      inp.addEventListener('input',()=>{ row[key]=inp.value; markDirty(row,tr,true); });
-      return td;
-    };
+  const cDate=document.createElement('div'); const iDate=document.createElement('input'); iDate.type='datetime-local';
+  const dt=item.created_at?new Date(item.created_at):null; if(dt&&!isNaN(dt)){ const local=new Date(dt.getTime()-dt.getTimezoneOffset()*60000).toISOString().slice(0,16); iDate.value=local; }
+  cDate.appendChild(iDate);
+  const btnNow=document.createElement('button'); btnNow.className='icon'; btnNow.title='Set to now'; btnNow.textContent='🕒';
+  btnNow.addEventListener('click',()=>{const now=new Date(); const local=new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,16); iDate.value=local; markDirty(item.id,row,labelUnsaved);});
+  cDate.appendChild(btnNow);
 
-    // cells
-    const tdName=document.createElement('td'); tdName.setAttribute('data-title','Filename');
-    tdName.textContent=row.filename;
-    const unsaved=document.createElement('span'); unsaved.className='chip unsaved hidden'; unsaved.textContent='● Unsaved';
-    tdName.appendChild(unsaved);
+  const cAct=document.createElement('div'); cAct.className='actions';
+  const labelUnsaved=document.createElement('span'); labelUnsaved.className='badge unsaved'; labelUnsaved.textContent='Unsaved'; labelUnsaved.style.display='none';
+  const btnSave=document.createElement('button'); btnSave.className='icon'; btnSave.title='Save to DB'; btnSave.textContent='💾';
+  const btnDel=document.createElement('button'); btnDel.className='icon danger'; btnDel.title='Delete from DB (optionally remove file)'; btnDel.textContent='🗑';
+  cAct.appendChild(labelUnsaved); cAct.appendChild(btnSave); cAct.appendChild(btnDel);
 
-    const tdTitle=mk('Title', row.title || titleFromName(baseFromFilename(row.filename)),'title');
-    const tdTags=mk('Tags', Array.isArray(row.tags)? row.tags.join(', ') : '','tags');
-    const tdCredit=mk('Credit', row.credit || '','credit');
+  row.appendChild(cPrev); row.appendChild(cName); row.appendChild(cTitle); row.appendChild(cTags); row.appendChild(cCred); row.appendChild(cDate); row.appendChild(cAct);
 
-    const tdDate=document.createElement('td'); tdDate.setAttribute('data-title','Date');
-    const dt=document.createElement('input'); dt.type='datetime-local'; dt.value=isoToLocalDT(row.created_at); dt.style.width='calc(100% - 48px)';
-    const nowBtn=document.createElement('button'); nowBtn.className='ghost'; nowBtn.style.marginLeft='6px'; nowBtn.textContent='Now';
-    tdDate.appendChild(dt); tdDate.appendChild(nowBtn);
-    dt.addEventListener('change',()=>{ row.created_at = localDTToISO(dt.value); markDirty(row,tr,true); });
-    nowBtn.addEventListener('click',()=>{ const iso=new Date().toISOString(); row.created_at=iso; dt.value=isoToLocalDT(iso); markDirty(row,tr,true); });
+  [iTitle,iTags,iCred,iDate].forEach(inp=>inp.addEventListener('input',()=>markDirty(item.id,row,labelUnsaved)));
 
-    tr.appendChild(tdName);
-    tr.appendChild(tdTitle);
-    tr.appendChild(tdTags);
-    tr.appendChild(tdCredit);
-    tr.appendChild(tdDate);
-
-    // actions
-    const tdAct=document.createElement('td'); tdAct.setAttribute('data-title','Actions');
-    const save=document.createElement('button'); save.className='icon'; save.title='Save to DB'; save.textContent='💾';
-    const del=document.createElement('button'); del.className='icon'; del.title='Delete'; del.textContent='🗑';
-    tdAct.appendChild(save); tdAct.appendChild(del);
-    tr.appendChild(tdAct);
-    $tbody.appendChild(tr);
-
-    // wire save / delete
-    save.addEventListener('click', async ()=>{
-      save.disabled=true;
-      try{
-        const body={
-          title: row.title || titleFromName(baseFromFilename(row.filename)),
-          credit: (row.credit||'').trim(),
-          created_at: row.created_at || null,
-          tags: parseTagsInput(row.tags)
-        };
-        await apiPatch(row.id, body);
-        save.textContent='✅'; setTimeout(()=>save.textContent='💾',800);
-        markDirty(row,tr,false);
-      }catch(e){ alert('Save failed: '+(e.message||e)); }
-      finally{ save.disabled=false; }
-    });
-
-    del.addEventListener('click', async ()=>{
-      const also = confirm('Delete file from disk too? OK = delete disk + DB, Cancel = DB only.');
-      try{ await apiDelete(row.id, also); await loadDB(); }
-      catch(e){ alert('Delete failed: ' + (e.message||e)); }
-    });
-  });
-
-  updateSaveAllButton();
+  btnSave.addEventListener('click', async ()=>{ btnSave.disabled=true; try{ const body={ title:iTitle.value.trim(), tags:parseTagsInput(iTags.value), credit:iCred.value.trim(), created_at:iDate.value?new Date(iDate.value).toISOString():null }; await API.patch(item.id,body); clearDirty(item.id,row,labelUnsaved); btnSave.textContent='✅'; setTimeout(()=>btnSave.textContent='💾',800);}catch(e){alert('Save failed: '+(e.message||e))}finally{btnSave.disabled=false;}});
+  btnDel.addEventListener('click', async ()=>{ const also=confirm('Delete this row from DB and remove the file from disk?\nOK = delete DB + file\nCancel = delete DB only'); btnDel.disabled=true; try{ await API.del(item.id,also); row.remove(); dirty.delete(item.id);}catch(e){alert('Delete failed: '+(e.message||e))}finally{btnDel.disabled=false;}});
+  row.__collectPayload=()=>({ id:item.id, body:{ title:iTitle.value.trim(), tags:parseTagsInput(iTags.value), credit:iCred.value.trim(), created_at:iDate.value?new Date(iDate.value).toISOString():null }, labelUnsaved });
+  return row;
 }
 
-/* load helpers */
-async function loadDB(){
-  clearRows();
-  try{
-    const items=await apiList(currentKind);
-    const rows=items.map(v=>({
-      id:v.id, kind:v.kind, filename:v.filename,
-      title:v.title||'', tags:Array.isArray(v.tags)?v.tags.slice():[],
-      credit:v.credit||'', created_at: v.created_at || null,
-      _dirty:false
-    }));
-    setRows(rows);
-  }catch(e){
-    $tbody.innerHTML='<tr><td colspan="7" class="muted" style="color:#ff9b9b">Load failed: '+(e.message||e)+'</td></tr>';
-    updateSaveAllButton();
-  }
+/* ===== render + paging ===== */
+function resetTable(){ $tbody.innerHTML=''; VISIBLE_ROWS=[]; PAGE=0; if(observerRows){observerRows.disconnect();observerRows=null;} if(observerPager){observerPager.disconnect();observerPager=null;} }
+function sortItems(){ const f=$sortField.value; const d=$sortDir.value==='desc'?-1:1; ALL_ITEMS.sort((a,b)=>{ let av,bv; if(f==='created_at'){ av=a.created_at?Date.parse(a.created_at):0; bv=b.created_at?Date.parse(b.created_at):0; } else { av=(a[f]||'').toString().toLowerCase(); bv=(b[f]||'').toString().toLowerCase(); } if(av<bv) return -1*d; if(av>bv) return 1*d; return 0; }); }
+function renderNextPage(){ const start=PAGE*PAGE_SIZE, end=Math.min(start+PAGE_SIZE,ALL_ITEMS.length); if(start>=end) return;
+  const frag=document.createDocumentFragment(); for(let i=start;i<end;i++){ const row=makeRow(ALL_ITEMS[i]); frag.appendChild(row); VISIBLE_ROWS.push(row); } $tbody.appendChild(frag); PAGE++;
+  if(!observerRows){ observerRows=new IntersectionObserver((ents)=>{ for(const e of ents){ if(e.isIntersecting && e.target.__thumbLoad){ e.target.__thumbLoad(); observerRows.unobserve(e.target);} } },{root:$tableWrap,rootMargin:'200px 0px',threshold:0.01}); }
+  if(KIND==='video'){ for(let i=start;i<end;i++){ observerRows.observe(VISIBLE_ROWS[i]); } }
 }
+function setupPager(){ if(observerPager){observerPager.disconnect();observerPager=null;} observerPager=new IntersectionObserver((ents)=>{ for(const e of ents){ if(e.isIntersecting) renderNextPage(); } },{root:$tableWrap,rootMargin:'200px 0px',threshold:0}); observerPager.observe($sentinel); }
+async function loadKind(kind){ KIND=kind; resetTable(); $status.textContent=''; try{ const list=await API.list(KIND); ALL_ITEMS=list.map(x=>({ id:x.id, filename:x.filename, title:x.title||'', tags:Array.isArray(x.tags)?x.tags.slice():[], credit:x.credit||'', created_at:x.created_at||null })); sortItems(); renderNextPage(); setupPager(); }catch(e){ $tbody.innerHTML='<div style="padding:12px 14px" class="err">Load failed: '+(e.message||e)+'</div>'; }}
 
-/* events */
-$btnScan.addEventListener('click', async ()=>{
-  $btnScan.disabled=true; $scanInfo.textContent='Scanning…';
-  try{ await apiScan(); $scanInfo.textContent='Scan complete.'; await loadDB(); }
-  catch(e){ $scanInfo.textContent='Scan failed: '+(e.message||e); }
-  finally { $btnScan.disabled=false; }
-});
+/* ===== controls ===== */
+$type.addEventListener('change',()=>loadKind($type.value==='audio'?'audio':'video'));
+$btnReload.addEventListener('click',()=>loadKind(KIND));
+$sortField.addEventListener('change',()=>{sortItems();resetTable();renderNextPage();setupPager();});
+$sortDir.addEventListener('change',()=>{sortItems();resetTable();renderNextPage();setupPager();});
+$btnSaveAll.addEventListener('click', async ()=>{ if(dirty.size===0){alert('No changes to save.');return;} $btnSaveAll.disabled=true; try{ const ops=[]; for(const row of VISIBLE_ROWS){ const id=Number(row.dataset.id); if(!dirty.has(id)) continue; const {id:rid,body,labelUnsaved}=row.__collectPayload(); ops.push(API.patch(rid,body).then(()=>clearDirty(rid,row,labelUnsaved))); } await Promise.allSettled(ops); $status.innerHTML='<span class="ok">All changes saved.</span>'; setTimeout(()=>{$status.textContent='';},1500); }catch(e){ alert('Save all failed: '+(e.message||e)); }finally{$btnSaveAll.disabled=false;} });
 
-$btnReload.addEventListener('click', loadDB);
+/* ===== import actions ===== */
+$btnScan.addEventListener('click', async ()=>{ $btnScan.disabled=true; $importInfo.textContent='Scanning…'; try{ await API.scan(); $importInfo.textContent='Scan complete.'; await loadKind(KIND); }catch(e){ $importInfo.textContent='Scan failed: '+(e.message||e); }finally{ $btnScan.disabled=false; }});
+$btnUpload.addEventListener('click',()=> $uploadPicker.click());
+$uploadPicker.addEventListener('change', async ()=>{ const files=Array.from($uploadPicker.files||[]); if(!files.length) return; $btnUpload.disabled=true; $importInfo.textContent='Uploading…'; try{ await API.upload(files); $importInfo.textContent='Upload complete.'; await loadKind(KIND); }catch(e){ alert('Upload failed: '+(e.message||e)); $importInfo.textContent='Upload failed.'; }finally{ $btnUpload.disabled=false; $uploadPicker.value=''; }});
 
-$mediaType.addEventListener('change', ()=>{ currentKind=$mediaType.value; loadDB(); });
-
-$sortField.addEventListener('change', ()=>{ sortFieldKey = $sortField.value; labelSortButton(); sortRowsInPlace(); setRows(ROWS); });
-$sortDir.addEventListener('click', ()=>{ sortAscending = !sortAscending; labelSortButton(); sortRowsInPlace(); setRows(ROWS); });
-
-$btnUploadMixed.addEventListener('click', ()=> $uploadMixed.click());
-$uploadMixed.addEventListener('change', async ()=>{
-  const files = Array.from($uploadMixed.files||[]);
-  if(!files.length) return;
-  $btnUploadMixed.disabled = true;
-  $scanInfo.textContent = 'Uploading…';
-  try{
-    const vids = files.filter(f=>IS_VIDEO_RE.test(f.name));
-    const auds = files.filter(f=>IS_AUDIO_RE.test(f.name));
-    if(vids.length) await apiUpload(vids,'video');
-    if(auds.length) await apiUpload(auds,'audio');
-    $scanInfo.textContent = 'Upload complete.';
-    await loadDB();
-  }catch(e){
-    alert('Upload failed: ' + (e.message||e));
-    $scanInfo.textContent = 'Upload failed.';
-  }finally{
-    $btnUploadMixed.disabled = false;
-    $uploadMixed.value = '';
-  }
-});
-
-/* Save all */
-$btnSaveAll.addEventListener('click', async ()=>{
-  const dirty = ROWS.filter(r=>r._dirty);
-  if(!dirty.length) return;
-  $btnSaveAll.disabled = true;
-  $btnSaveAll.textContent = `Saving… (0/${dirty.length})`;
-  let i=0, ok=0, fail=0;
-  for(const row of dirty){
-    try{
-      const body={
-        title: row.title || titleFromName(baseFromFilename(row.filename)),
-        credit: (row.credit||'').trim(),
-        created_at: row.created_at || null,
-        tags: parseTagsInput(row.tags)
-      };
-      await apiPatch(row.id, body);
-      row._dirty=false; ok++;
-      const tr = Array.from($tbody.children).find(tr => tr.querySelector('[data-title="Filename"]')?.firstChild?.nodeValue === row.filename);
-      if(tr) markDirty(row,tr,false);
-    }catch(e){
-      console.warn('Save-all failed for', row.filename, e);
-      fail++;
-    }finally{
-      i++;
-      $btnSaveAll.textContent = `Saving… (${i}/${dirty.length})`;
-    }
-  }
-  await loadDB();
-  $btnSaveAll.textContent = fail ? `Done (${ok} saved, ${fail} failed)` : 'All changes saved';
-  setTimeout(updateSaveAllButton, 1200);
-});
-
-/* initial load */
-function labelSortButton(){ if(sortFieldKey==='created_at'){$sortDir.textContent = sortAscending ? 'Old→New' : 'New→Old';} else {$sortDir.textContent = sortAscending ? 'A→Z' : 'Z→A';} }
-labelSortButton();
-document.addEventListener('DOMContentLoaded', ()=>{ currentKind='video'; $mediaType.value='video'; loadDB(); });
+/* ===== boot ===== */
+(function init(){ $type.value='video'; loadKind('video'); })();
 </script>
 </body>
 </html>
