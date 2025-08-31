@@ -51,8 +51,6 @@ No external cloud required — runs in a single Docker container with a lightwei
 
 ## 📦 Quick Start (Docker Compose)
 
-> The easiest path is to build directly from this repo. Pin to a tag or commit for stability.
-
 **docker-compose.yml**
 ```yaml
 version: "3.9"
